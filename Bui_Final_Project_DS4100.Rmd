@@ -1,0 +1,1459 @@
+---
+title: "Kristi Bui - DS4100 Final Project"
+output: html_notebook
+---
+
+<p><b>Business Problem:<br></b> My project investigates the relationship between various demographics about the municipalities of Massachusetts, and whether or not they voted 'Yes' on question 4 of the Massachusetts Ballot 2016: whether to approve the legalization of marijuana, which would be regulated in a similar fashion to alcoholic beverages.
+<br>This study could be used to see what sort of correlations there are between a precinct's demographics, and whether or not that would predict them voting 'Yes' or 'No' to legalizing marijuana. In addition, this may bring insight into what sort of towns/cities that recreational marijuana dispenceries should look towards to open new stores/locations.</p>
+
+<br><br>
+<b>Data Acquisition</b>
+I acquired data in a variety of ways for my final project. Specifically, I acquired data via 1. scraping from PDF files 2. importing/loading data via CSV file 3. web scraping.
+<br>
+<br>
+<br>
+<b>Acquiring Data via PDF Scraping/Parsing:</b>
+<i>Outstanding Debt per Massachusetts Precinct</i>
+
+```{r}
+
+# Data to scrape from PDFs
+library(pdftools)
+library(dplyr)
+
+# Outstanding Debt Data
+outstanding_debt <- pdf_text('Ranking_Total_Outstanding_Debt.pdf')
+outstanding_debt <- strsplit(outstanding_debt, "\n")
+
+debt_headers <- c(trimws(outstanding_debt[[1]][[2]], "l"), outstanding_debt[[1]][[1]])
+
+outstanding_debt_df <- data.frame(matrix(ncol = 2, nrow = 0))
+colnames(outstanding_debt_df) <- debt_headers
+
+x <- 1
+
+# Page 1
+for (i in 3:length(outstanding_debt[[1]])) {
+  
+  outstanding_debt_df[x,] <- unlist(strsplit(trimws(outstanding_debt[[1]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 2
+for (i in 4:length(outstanding_debt[[2]])) {
+  
+  outstanding_debt_df[x,] <- unlist(strsplit(trimws(outstanding_debt[[2]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 3
+for (i in 4:length(outstanding_debt[[3]])) {
+  
+  outstanding_debt_df[x,] <- unlist(strsplit(trimws(outstanding_debt[[3]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 4
+for (i in 4:length(outstanding_debt[[4]])) {
+  
+  outstanding_debt_df[x,] <- unlist(strsplit(trimws(outstanding_debt[[4]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 5
+for (i in 4:length(outstanding_debt[[5]])) {
+  
+  outstanding_debt_df[x,] <- unlist(strsplit(trimws(outstanding_debt[[5]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 6
+for (i in 4:length(outstanding_debt[[6]])) {
+  
+  outstanding_debt_df[x,] <- unlist(strsplit(trimws(outstanding_debt[[6]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+
+# Page 7
+for (i in 4:length(outstanding_debt[[7]])) {
+  
+  outstanding_debt_df[x,] <- unlist(strsplit(trimws(outstanding_debt[[7]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Cleaning Data
+# 1. Remove trailing white space
+outstanding_debt_df$Municipality <- trimws(outstanding_debt_df$Municipality, "r")
+
+# 2. Remove commas in money
+outstanding_debt_df$`Ranking-Total Outstanding Debt (2016)` <- gsub(",", "", outstanding_debt_df$`Ranking-Total Outstanding Debt (2016)`)
+
+# 3. Assign NA values to dirty data
+outstanding_debt_df$`Ranking-Total Outstanding Debt (2016)`[338:357] <- NA
+
+# 4. Convert ranking to numeric
+outstanding_debt_df$`Ranking-Total Outstanding Debt (2016)` <- as.numeric(outstanding_debt_df$`Ranking-Total Outstanding Debt (2016)`)
+
+# 5. Remove any duplicate rows
+outstanding_debt_df <- distinct(outstanding_debt_df)
+
+# 6. Rename columns
+colnames(outstanding_debt_df) <- c("Municipality", "Total Outstanding Debt - 2016")
+
+# 7. Rename: Manchester-by-the-Sea
+outstanding_debt_df$Municipality[which(
+  outstanding_debt_df$Municipality == "Manchester-by-the-S..")] <- "Manchester-by-the-Sea"
+
+# 8. Set
+
+# Output result
+outstanding_debt_df
+
+
+```
+
+<br>
+<i>Violent Crime Rate (per 100K population)</i>
+
+```{r}
+
+# Crime Rate
+crime_rate <- pdf_text('Crime_Rate.pdf')
+crime_rate <- strsplit(crime_rate, "\n")
+
+# Headers
+cr_headers <- c("Municipality", "Violent Crime Rate (per 100K) - 2017")
+crime_rate_df <- data.frame(matrix(ncol = 2, nrow = 0))
+colnames(crime_rate_df) <- cr_headers
+
+x <- 1
+
+# Page 1: crime_rate[[1]][[3]]
+for (i in 3:length(crime_rate[[1]])) {
+  
+  data <- unlist(strsplit(trimws(crime_rate[[1]][[i]], "l"), "\\s+"))
+  
+  if (length(data) > 2) {
+    
+    data <- c(paste(data[1], data[2], sep=" "), data[3])
+  }
+  
+  crime_rate_df[x,] <- data
+  
+  x = x + 1
+}
+
+# Page 2
+for (i in 4:length(crime_rate[[2]])) {
+  
+  data <- unlist(strsplit(trimws(crime_rate[[2]][[i]], "l"), "\\s+"))
+  
+  if (length(data) > 2) {
+    
+    data <- c(paste(data[1], data[2], sep=" "), data[3])
+  }
+  
+  crime_rate_df[x,] <- data
+  
+  x = x + 1
+}
+
+# Page 3
+for (i in 4:length(crime_rate[[3]])) {
+  
+  data <- unlist(strsplit(trimws(crime_rate[[3]][[i]], "l"), "\\s+"))
+  
+  if (length(data) > 2) {
+    
+    data <- c(paste(data[1], data[2], sep=" "), data[3])
+  }
+  
+  crime_rate_df[x,] <- data
+  
+  x = x + 1
+}
+
+# Page 4
+for (i in 4:length(crime_rate[[4]])) {
+  
+  data <- unlist(strsplit(trimws(crime_rate[[4]][[i]], "l"), "\\s+"))
+  
+  if (length(data) > 2) {
+    
+    data <- c(paste(data[1], data[2], sep=" "), data[3])
+  }
+  
+  crime_rate_df[x,] <- data
+  
+  x = x + 1
+}
+
+# Page 5
+for (i in 4:length(crime_rate[[5]])) {
+  
+  data <- unlist(strsplit(trimws(crime_rate[[5]][[i]], "l"), "\\s+"))
+  
+  if (length(data) > 2) {
+    
+    data <- c(paste(data[1], data[2], sep=" "), data[3])
+  }
+  
+  crime_rate_df[x,] <- data
+  
+  x = x + 1
+}
+
+
+# Cleaning Data
+# 1. Remove invalid lines
+crime_rate_df <- crime_rate_df[-c(53, 54, 55, 108, 109, 110,
+                                  163, 164, 165, 219, 220, 270, 271),]
+
+# 2. Remove trailing white space
+crime_rate_df$Municipality <- trimws(crime_rate_df$Municipality, "r")
+
+# 3. Convert to numeric
+crime_rate_df$`Violent Crime Rate (per 100K) - 2017` <- as.numeric(crime_rate_df$`Violent Crime Rate (per 100K) - 2017`)
+
+# 4. Remove any duplicated rows
+crime_rate_df <- distinct(crime_rate_df)
+
+# 5. Set any as '0' to NA
+crime_rate_df$`Violent Crime Rate (per 100K) - 2017`[which(crime_rate_df$`Violent Crime Rate (per 100K) - 2017` == 0)] <- NA
+
+# Output result
+crime_rate_df
+
+```
+
+<br>
+<i>Per Capita Revenue</i>
+
+```{r}
+
+# Revenue: 'Per_Capita_Revenue.pdf'
+per_capita_revenue <- pdf_text('Per_Capita_Revenue.pdf')
+per_capita_revenue <- strsplit(per_capita_revenue, "\n")
+
+# Headers
+revenue_headers <- c("Municipality", "Per Capita Revenue")
+revenue_df <- data.frame(matrix(ncol = 2, nrow = 0))
+colnames(revenue_df) <- revenue_headers
+
+x <- 1
+
+# Page 1 : start at per_capita_revenue[[1]][[3]]
+for (i in 3:length(per_capita_revenue[[1]])) {
+  
+  revenue_df[x,] <- unlist(strsplit(trimws(per_capita_revenue[[1]][[i]], 
+                                           "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 2
+for (i in 4:length(per_capita_revenue[[2]])) {
+  
+  revenue_df[x,] <- unlist(strsplit(trimws(per_capita_revenue[[2]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 3
+for (i in 4:length(per_capita_revenue[[3]])) {
+  
+  revenue_df[x,] <- unlist(strsplit(trimws(per_capita_revenue[[3]][[i]], 
+                                                    "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 4
+for (i in 4:length(per_capita_revenue[[4]])) {
+  
+  revenue_df[x,] <- unlist(strsplit(trimws(per_capita_revenue[[4]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 5
+for (i in 4:length(per_capita_revenue[[5]])) {
+  
+  revenue_df[x,] <- unlist(strsplit(trimws(per_capita_revenue[[5]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 6
+for (i in 4:length(per_capita_revenue[[6]])) {
+  
+  revenue_df[x,] <- unlist(strsplit(trimws(per_capita_revenue[[6]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+
+# Page 7
+for (i in 4:length(per_capita_revenue[[7]])) {
+  
+  revenue_df[x,] <- unlist(strsplit(trimws(per_capita_revenue[[7]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Cleaning Data
+# 1. Remove trailing white space
+revenue_df$Municipality <- trimws(revenue_df$Municipality, "r")
+
+# 2. Remove commas in money and convert to numeric
+revenue_df$`Per Capita Revenue`<- as.numeric(gsub(",", "", revenue_df$`Per Capita Revenue`))
+
+# 3. Remove any duplicate rows
+revenue_df <- distinct(revenue_df)
+
+# 4. Rename: Manchester-by-the-Sea
+revenue_df$Municipality[which(
+  revenue_df$Municipality == "Manchester-by-the-S..")] <- "Manchester-by-the-Sea"
+
+# Output result
+revenue_df
+
+```
+
+<br>
+<i>Tax Rates</i>
+
+```{r}
+
+# Tax Rates: 'Tax_Rates.pdf'
+tax_rates <- pdf_text('Tax_Rates.pdf')
+tax_rates <- strsplit(tax_rates, "\n")
+
+# Headers
+tax_rate_headers <- c("Municipality", "Tax Rate (2017)")
+tax_rates_df <- data.frame(matrix(ncol = 2, nrow = 0))
+colnames(tax_rates_df) <- tax_rate_headers
+
+x <- 1
+
+# Page 1
+for (i in 3:length(tax_rates[[1]])) {
+  
+  data <- unlist(strsplit(trimws(tax_rates[[1]][[i]], "l"), "\\s+"))
+  
+  if (length(data) > 2) {
+    
+    data <- c(paste(data[1], data[2], sep=" "), data[3])
+  }
+  
+  tax_rates_df[x,] <- data
+  
+  x = x + 1
+}
+
+# Page 2
+for (i in 4:length(tax_rates[[2]])) {
+  
+  data <- unlist(strsplit(trimws(tax_rates[[2]][[i]], "l"), "\\s+"))
+  
+  if (length(data) > 2) {
+    
+    data <- c(paste(data[1], data[2], sep=" "), data[3])
+  }
+  
+  tax_rates_df[x,] <- data
+  
+  x = x + 1
+}
+
+# Page 3
+for (i in 4:length(tax_rates[[3]])) {
+  
+  data <- unlist(strsplit(trimws(tax_rates[[3]][[i]], "l"), "\\s+"))
+  
+  if (length(data) > 2) {
+    
+    data <- c(paste(data[1], data[2], sep=" "), data[3])
+  }
+  
+  tax_rates_df[x,] <- data
+  
+  x = x + 1
+}
+
+# Page 4
+for (i in 4:length(tax_rates[[4]])) {
+  
+  data <- unlist(strsplit(trimws(tax_rates[[4]][[i]], "l"), "\\s+"))
+  
+  if (length(data) > 2) {
+    
+    data <- c(paste(data[1], data[2], sep=" "), data[3])
+  }
+  
+  tax_rates_df[x,] <- data
+  
+  x = x + 1
+}
+
+# Page 5
+for (i in 4:length(tax_rates[[5]])) {
+  
+  data <- unlist(strsplit(trimws(tax_rates[[5]][[i]], "l"), "\\s+"))
+  
+  if (length(data) > 2) {
+    
+    data <- c(paste(data[1], data[2], sep=" "), data[3])
+  }
+  
+  tax_rates_df[x,] <- data
+  
+  x = x + 1
+}
+
+# Page 6
+for (i in 4:length(tax_rates[[6]])) {
+  
+  data <- unlist(strsplit(trimws(tax_rates[[6]][[i]], "l"), "\\s+"))
+  
+  if (length(data) > 2) {
+    
+    data <- c(paste(data[1], data[2], sep=" "), data[3])
+  }
+  
+  tax_rates_df[x,] <- data
+  
+  x = x + 1
+}
+
+
+# Page 7
+for (i in 4:length(tax_rates[[7]])) {
+  
+  data <- unlist(strsplit(trimws(tax_rates[[7]][[i]], "l"), "\\s+"))
+  
+  if (length(data) > 2) {
+    
+    data <- c(paste(data[1], data[2], sep=" "), data[3])
+  }
+  
+  tax_rates_df[x,] <- data
+  
+  x = x + 1
+}
+
+# Cleaning data
+
+# 1. Remove trailing whitespace
+tax_rates_df$Municipality <- trimws(tax_rates_df$Municipality, "r")
+
+# 2. Convert to numeric
+tax_rates_df$`Tax Rate (2017)` <- as.numeric(tax_rates_df$`Tax Rate (2017)`)
+
+# 3. Remove any duplicate rows
+tax_rates_df <- distinct(tax_rates_df)
+
+# 4. Rename: Manchester-by-the-Sea
+tax_rates_df$Municipality[which(
+  tax_rates_df$Municipality == "Manchester-by-the-S..")] <- "Manchester-by-the-Sea"
+
+# Output result
+tax_rates_df
+
+```
+
+<br>
+<i>Per Capita Education Spending</i>
+
+```{r}
+
+# Education
+educ_spending <- pdf_text('Education_Spending_Per_Capita.pdf')
+educ_spending <- strsplit(educ_spending, "\n")
+
+# Headers
+education_headers <- c("Municipality", "Education Spending Per Capita - 2015")
+education_spending_df <- data.frame(matrix(ncol = 2, nrow = 0))
+colnames(education_spending_df) <- education_headers
+
+x <- 1
+
+# Page 1 : start at per_capita_revenue[[1]][[3]]
+for (i in 3:length(educ_spending[[1]])) {
+  
+  education_spending_df[x,] <- unlist(strsplit(trimws(
+                          educ_spending[[1]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 2
+for (i in 4:length(educ_spending[[2]])) {
+  
+  education_spending_df[x,] <- unlist(strsplit(trimws(
+                          educ_spending[[2]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 3
+for (i in 4:length(educ_spending[[3]])) {
+  
+  education_spending_df[x,] <- unlist(strsplit(trimws(
+                          educ_spending[[3]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 4
+for (i in 4:length(educ_spending[[4]])) {
+  
+  education_spending_df[x,] <- unlist(strsplit(trimws(
+                          educ_spending[[4]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 5
+for (i in 4:length(educ_spending[[5]])) {
+  
+  education_spending_df[x,] <- unlist(strsplit(trimws(
+                          educ_spending[[5]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 6
+for (i in 4:length(educ_spending[[6]])) {
+  
+  education_spending_df[x,] <- unlist(strsplit(trimws(
+                          educ_spending[[6]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Page 7
+for (i in 4:length(educ_spending[[7]])) {
+  
+  education_spending_df[x,] <- unlist(strsplit(trimws(
+                          educ_spending[[7]][[i]], "l"), "\\$"))
+  
+  x = x + 1
+}
+
+# Data Cleaning
+# 1. Remove commas in spending
+education_spending_df$`Education Spending Per Capita - 2015` <-
+  gsub(",", "", education_spending_df$`Education Spending Per Capita - 2015`)
+
+
+# Cleaning data
+# 1. Remove any trailing white space
+education_spending_df$Municipality <- trimws(education_spending_df$Municipality, "r")
+  
+# 2. Remove any duplicate rows
+education_spending_df <- distinct(education_spending_df)
+
+# 3. Convert to numeric
+education_spending_df$`Education Spending Per Capita - 2015` <- as.numeric(education_spending_df$`Education Spending Per Capita - 2015`)
+
+# 4. Set any as '0' equal to NA
+education_spending_df$`Education Spending Per Capita - 2015`[which(education_spending_df$`Education Spending Per Capita - 2015` == 0)] <- NA
+
+# Output result
+education_spending_df
+
+
+```
+
+<br>
+<b>Acquisition from web via scraping tool: import.io</b>
+Used import.io to scrape from the NY Times. Url: https://www.nytimes.com/elections/2016/results/massachusetts-ballot-measure-4-legalize-marijuana
+<br><br>
+<i>Voting Data on Question 4 Ballot</i>
+
+```{r}
+
+# Used import.io tool to scrape data from the NY Times
+# Importing file into R:
+ballot_4_df <- read.csv('nytimes_ballot_4.csv', header=TRUE)
+
+# Cleaning Data
+# 1. Remove first column with URLs
+ballot_4_df$url <- NULL
+
+# 2. Remove commas from Yes / No columns
+# and convert to numeric
+ballot_4_df$Yes <- as.numeric(gsub(",", "", ballot_4_df$Yes))
+ballot_4_df$No <- as.numeric(gsub(",", "", ballot_4_df$No))
+
+# 3. Add new column for binary 'yes' / 'no'
+# Populate new column `Voted Yes`
+ballot_4_df$`Voted Yes?`<- ifelse(ballot_4_df$Yes > ballot_4_df$No, 1, 0)
+
+# 4. Change column name
+colnames(ballot_4_df) <- c("Municipality", "Yes", "No", "Voted Yes?")
+
+# Output result
+ballot_4_df
+
+```
+
+<br>
+<b>Using a webscraper to scrape data off of websites:</b>
+<i>Median Household Income</i>
+
+```{r}
+
+# Loading rvest package
+# in order to webscrape
+library('rvest')
+
+# Median Household Income
+med_household_income <- 'https://en.wikipedia.org/wiki/List_of_Massachusetts_locations_by_per_capita_income'
+
+med_income_webpage <- read_html(med_household_income)
+
+# Retrieve Headers
+headers <- html_nodes(med_income_webpage, "body div+ div+ div #bodyContent #mw-content-text .mw-parser-output .wikitable th") %>% html_text()
+
+# Info
+table <- html_nodes(med_income_webpage, "body div+ div+ div #bodyContent #mw-content-text .mw-parser-output table")[3]
+
+info <- html_node(table, "tbody") %>% html_text()
+
+# Parsing / Cleaning Data
+info_clean <- gsub("\n\n", "#", info)
+info_clean <- unlist(strsplit(info_clean, "\n"))
+
+# Header info
+med_income_headers <- unlist(strsplit(info_clean[1], "#"))
+
+med_household_df <- data.frame(matrix(ncol = 9, nrow = 0))
+colnames(med_household_df) <- med_income_headers
+
+x <- 1
+
+# Import rest of the data
+for (i in 2:length(info_clean)) {
+  
+  data <- unlist(strsplit(info_clean[i], "#"))
+  
+  # Don't include edge cases
+  if ((data[1] == "Massachusetts") || (data[1] == "United States")) {
+    
+    # Don't include this
+  }
+  else {
+
+      med_household_df[x,] <- data
+  }
+  
+  x <- x + 1
+}
+
+# Cleaning Data
+
+# 1. Remove unnecessary columns
+med_household_df$Rank <- NULL
+
+# 2. Remove characters in numeric values
+# and then convert to numeric
+med_household_df$`Per capitaincome` <- gsub("\\$", "", med_household_df$`Per capitaincome`)
+med_household_df$`Per capitaincome` <- gsub(",", "", med_household_df$`Per capitaincome`)
+med_household_df$`Per capitaincome` <- as.numeric(med_household_df$`Per capitaincome`)
+
+med_household_df$Medianhouseholdincome <- gsub("\\$", "", med_household_df$Medianhouseholdincome)
+med_household_df$Medianhouseholdincome <- gsub(",", "", med_household_df$Medianhouseholdincome)
+med_household_df$Medianhouseholdincome <- as.numeric(med_household_df$Medianhouseholdincome)
+
+med_household_df$Medianfamilyincome <- gsub("\\+", "", med_household_df$Medianfamilyincome)
+med_household_df$Medianfamilyincome <- gsub("\\$", "", med_household_df$Medianfamilyincome)
+med_household_df$Medianfamilyincome <- gsub(",", "", med_household_df$Medianfamilyincome)
+med_household_df$Medianfamilyincome <- as.numeric(med_household_df$Medianfamilyincome)
+
+med_household_df$Population <- gsub(",", "", med_household_df$Population)
+med_household_df$Population <- as.numeric(med_household_df$Population)
+
+med_household_df$`Number ofhouseholds` <- gsub(",", "", med_household_df$`Number ofhouseholds`)
+med_household_df$`Number ofhouseholds` <- as.numeric(med_household_df$`Number ofhouseholds`)
+
+# 3. Remove any duplicates
+med_household_df <- distinct(med_household_df)
+
+# 4. Change column names 
+colnames(med_household_df) <- c("Municipality", "Type", "County", "Per Capita Income",
+                                "Median Household Income", "Median Family Income", "Population",
+                                "# of Households")
+
+# Output result
+med_household_df
+
+```
+
+<br><br>
+<b>Data Storage & Retrieval</b><br>
+<p>The next step was to store my data in a relational database. I saved each of the data frames containing the information I am going to use as as a CSV file, and wrote a sql script to create a database called 'mass.db' using sqlite. I then connected to my sqlite database, and used a join to create my final data frame containing all of the Massachusetts demographic/voting data I will need for the modeling.</p>
+<br>
+<i>Saving each individual data frame as a CSV file:</i>
+
+```{r}
+
+# Here, I will save all of the individual data frames as
+# CSV files, so that I can load them as tables into a
+# a relational database using sqllite
+# Note: in order to save as CSV table, set all
+# NA values to an empty string
+outstanding_debt_df[is.na(outstanding_debt_df)] <- ""
+crime_rate_df[is.na(crime_rate_df)] <- ""
+revenue_df[is.na(revenue_df)] <- ""
+tax_rates_df[is.na(tax_rates_df)] <- ""
+education_spending_df[is.na(education_spending_df)] <- ""
+ballot_4_df[is.na(ballot_4_df)] <- ""
+med_household_df[is.na(med_household_df)] <- ""
+
+# Write/save all tables as CSV table
+write.table(outstanding_debt_df, file="outstanding_debt_database.csv", row.names=FALSE,
+            col.names=FALSE, sep=",")
+write.table(crime_rate_df, file="crime_rate_database.csv", row.names=FALSE,
+            col.names=FALSE, sep=",")
+write.table(revenue_df, file="revenue_database.csv", row.names=FALSE,
+            col.names=FALSE, sep=",")
+write.table(tax_rates_df, file="tax_rates_database.csv", row.names=FALSE,
+            col.names=FALSE, sep=",")
+write.table(education_spending_df, file="education_spending_database.csv", row.names=FALSE,
+            col.names=FALSE, sep=",")
+write.table(ballot_4_df, file="ballot_4_database.csv", row.names=FALSE,
+            col.names=FALSE, sep=",")
+write.table(med_household_df, file="med_household_database.csv", row.names=FALSE,
+            col.names=FALSE, sep=",")
+
+```
+
+<br>
+<i>Connecting to the sqlite database, and joining the tables in order to create my final data:</i>
+
+```{r}
+
+# Using the saved CSV files, I then
+# loaded them as tables into a database
+# Connecting to the database
+library('RSQLite')
+
+mass_db <- dbConnect(SQLite(), "mass.db")
+
+# Get table, and then join
+# all the other tables in order to
+# create a final data frame to work with
+
+# Join tables to create final dataframe 
+# of massachusetts data to work with
+# Use selective retrieval mechanism
+# to filter out the NULL values
+mass_data <- dbGetQuery(mass_db, "SELECT *  FROM MUNICIPALITY
+                        LEFT JOIN DEBT ON (MUNICIPALITY.MUNICIPALITY = DEBT.MUNICIPALITY)
+                        LEFT JOIN CRIME ON (MUNICIPALITY.MUNICIPALITY = CRIME.MUNICIPALITY)
+                        LEFT JOIN REVENUE ON (MUNICIPALITY.MUNICIPALITY = REVENUE.MUNICIPALITY)
+                        LEFT JOIN TAXES ON (MUNICIPALITY.MUNICIPALITY = TAXES.MUNICIPALITY)
+                        LEFT JOIN EDUCATION ON (MUNICIPALITY.MUNICIPALITY = EDUCATION.MUNICIPALITY)
+                        LEFT JOIN BALLOT ON (MUNICIPALITY.MUNICIPALITY = BALLOT.MUNICIPALITY)")
+
+# Remove unnecessary columns
+mass_data$Municipality..9 <- NULL
+mass_data$Municipality..11 <- NULL
+mass_data$Municipality..13 <- NULL
+mass_data$Municipality..15 <- NULL
+mass_data$Municipality..17 <- NULL
+mass_data$Municipality..19 <- NULL
+
+# 2. Removing NULL Data
+mass_data$`Total Outstanding Debt - 2016`[which(mass_data$`Total Outstanding Debt - 2016` == 0)] <- NA
+mass_data$`Violent Crime Rate - 2017`[which(mass_data$`Violent Crime Rate - 2017` == 0)] <- NA
+mass_data$`Education Spending Per Capita - 2015`[which(mass_data$`Education Spending Per Capita - 2015` == 0)] <- NA
+mass_data <- na.omit(mass_data)
+
+# Output result
+mass_data
+
+```
+
+<br><br>
+
+<b>Data Exploration</b><br>
+<p>Now that I have all of my data, I am ready to explore, using visualizations, the relationships between the different precinct variables in relation to whether or not they voted yes on question 4 of the 2016 Massachusetts Ballot.<br>
+My process is as follows: build a histogram for each variable to assess the distribution and based on this, use either Pearson's or Spearman's to perform a correlation test. I will also build a scatterplot of the variables to decide whether or not they might have outliers that will need to be removed. Once I have gone through exploring all of the variables, I will then remove the outliers by removing any values with a z-score greater than the absolute value of 3.</p>
+
+```{r}
+
+# Use ggplot2 to visualize
+# for exploratory data plotting
+library(ggplot2)
+
+# Function to calculate the z score
+# if a z-score is greater than 3, it is an outlier
+detect_outliers <- function(val, sd, mean) {
+  
+  # Function to retrieve outliers in a vector using the z-score.
+  #
+  # Input
+  #   val: Vector containing the data to be evaluated.
+  #   std: Standard deviation
+  #   mean: Mean
+  #
+  # Output
+  #   Vector containing the elements that are outliers.
+  #   Vector will have 'TRUE' at a specific index
+  #   if it is determined that the element is an outlier.
+  
+  # Calculate z value for value
+  curr_z <- (val - mean) / sd
+  
+  # Check if greater than 3 | less than -3
+  result <- ifelse(curr_z > 3 | curr_z < -3, TRUE, FALSE)
+  
+  return(result)
+}
+
+```
+
+
+<i>Per Capita Income</i>
+
+```{r}
+
+# 1. Build histogram to assess normality/distribution
+hist(mass_data$`Per Capita Income`, main='Per Capita Income')
+
+# Based on histogram, 'Per Capita Income' appears to be
+# skewed right (not normally distributed)
+
+# 2. Build scatterplot to test for outliers,
+# view any relationship between population and voting yes
+ggplot(data=mass_data) + geom_point(mapping=aes(x=`Per Capita Income`, y=`Voted Yes?`), color="lightskyblue")
+
+# Based on the histogram and scatterplot, it looks as though there 
+# might be some outliers in this data set: will remove
+
+# 3. Use Spearman's to calculate correlation
+correlation_per_capita_income <- cor.test(mass_data$`Per Capita Income`,
+                      mass_data$`Voted Yes?`, method="spearman")
+correlation_per_capita_income
+
+# The calculated coefficient of correlation is calculated to be
+# -0.3295353, meaning that there is a weak downhill/negative linear
+# relationship between a precinct's per capita income and 
+# and whether or not they voted for the legalization of marijuana.
+# The p-value is 9.052e-08, making it smaller than 0.05, 
+# meaning that it is statistically significant.
+
+```
+
+<i>Median Household income</i>
+
+```{r}
+
+# 1. Build histogram to assess normality/distribution
+hist(mass_data$`Median Household Income`, main='Median Household Income')
+
+# Based on histogram, 'Median Household Income' appears to be
+# skewed right (not normally distributed)
+
+# 2. Build scatterplot to test for outliers,
+# view any relationship between population and voting yes
+ggplot(data=mass_data) + geom_point(mapping=aes(x=`Median Household Income`, 
+                                                y=`Voted Yes?`), color="lightskyblue")
+
+# Based on the histogram and scatterplot, it looks as though there 
+# might be some outliers in this data set: will remove later
+
+# 3. Use Spearman's to calculate correlation
+correlation_median_household_income <- cor.test(mass_data$`Median Household Income`,
+                      mass_data$`Voted Yes?`, method="spearman")
+correlation_median_household_income
+
+# The calculated coefficient of correlation is calculated to be
+# -0.346315, meaning that there is a weak downhill/negative linear
+# relationship between a precinct's median household income and 
+# and whether or not they voted for the legalization of marijuana.
+# The p-value is 1.755e-08, making it smaller than 0.05, 
+# meaning that it is statistically significant.
+
+```
+
+
+<i>Median Family Income</i>
+
+```{r}
+
+# 1. Build histogram to assess normality/distribution
+hist(mass_data$`Median Family Income`, main='Median Family Income')
+
+# Based on histogram, 'Median Household Income' appears to be
+# skewed right (not normally distributed)
+
+# 2. Build scatterplot to test for outliers,
+# view any relationship between population and voting yes
+ggplot(data=mass_data) + geom_point(mapping=aes(x=`Median Family Income`, 
+                                                y=`Voted Yes?`), color="lightskyblue")
+
+# Based on the histogram and scatterplot, it looks as though there 
+# might be some outliers in this data set: will remove later
+
+# 3. Use Spearman's to calculate correlation
+correlation_median_family_income <- cor.test(mass_data$`Median Family Income`,
+                      mass_data$`Voted Yes?`, method="spearman")
+correlation_median_family_income
+
+# The calculated coefficient of correlation is calculated to be
+# -0.3185819, meaning that there is a weak downhill/negative linear
+# relationship between a precinct's median family income and 
+# and whether or not they voted for the legalization of marijuana.
+# The p-value is 2.508e-07, making it smaller than 0.05, 
+# meaning that it is statistically significant.
+
+```
+
+<i>Population</i>
+
+```{r}
+
+# 1. Build histogram to assess normality/distribution
+hist(mass_data$Population, main='Population')
+
+# Based on histogram, 'Median Household Income' appears to be
+# skewed right (not normally distributed)
+
+# 2. Build scatterplot to test for outliers,
+# view any relationship between population and voting yes
+ggplot(data=mass_data) + geom_point(mapping=aes(x=`Population`, y=`Voted Yes?`), 
+                                    color="lightskyblue")
+
+# Based on the histogram and scatterplot, it looks as though there 
+# might be some outliers in this data set: will remove later
+
+# 3. Use Spearman's to calculate correlation
+correlation_population <- cor.test(mass_data$Population,
+                      mass_data$`Voted Yes?`, method="spearman")
+correlation_population
+
+# The calculated coefficient of correlation is calculated to be
+# -0.09345379, which is close to 0 - meaning that there is almost no linear
+# relationship between a precinct's population and 
+# and whether or not they voted for the legalization of marijuana.
+# The p-value is 0.1398, making it larger than 0.05, 
+# meaning that it is statistically insignificant.
+# As a result, I will exclude population as a
+# variable in gauging a precinct's interest in the
+# legalization of marijuana.
+
+```
+
+<i>Total Outstanding Debt - 2016</i>
+
+```{r}
+
+# 1. Build histogram to assess normality/distribution
+hist(mass_data$`Total Outstanding Debt - 2016`, main='Total Outstanding Debt (2016)')
+
+# Based on histogram, 'Median Household Income' appears to be
+# skewed right (not normally distributed)
+
+# 2. Build scatterplot to test for outliers,
+# view any relationship between population and voting yes
+ggplot(data=mass_data) + geom_point(mapping=aes(x=`Total Outstanding Debt - 2016`, 
+                                                y=`Voted Yes?`), color="lightskyblue")
+
+# Based on the histogram and scatterplot, it looks as though there 
+# might be some outliers in this data set: will remove later
+
+# 3. Use Spearman's to calculate correlation
+correlation_outstanding_debt <- cor.test(mass_data$`Total Outstanding Debt - 2016`,
+                      mass_data$`Voted Yes?`, method="spearman")
+correlation_outstanding_debt
+
+# The calculated coefficient of correlation is calculated to be
+# -0.15731, which is near 0, meaning that there is a very weak downhill/negative
+# relationship/almost no linear relationship between a precinct's total outstanding
+# debt and whether or not they voted for the legalization of marijuana.
+# The p-value is 0.01258, making it smaller than 0.05, 
+# meaning that it is statistically significant.
+# As a result, I will exclude outstanding debt as a
+# variable in gauging a precinct's interest in the
+# legalization of marijuana.
+
+```
+
+<i>Violent Crime Rate - 2017</i>
+
+```{r}
+
+# 1. Build histogram to assess normality/distribution
+hist(mass_data$`Violent Crime Rate - 2017`, main='Violent Crime Rate')
+
+# Based on histogram, 'Median Household Income' appears to be
+# skewed right (not normally distributed)
+
+# 2. Build scatterplot to test for outliers,
+# view any relationship between population and voting yes
+ggplot(data=mass_data) + geom_point(mapping=aes(x=`Violent Crime Rate - 2017`, 
+                                                y=`Voted Yes?`), color="lightskyblue")
+
+# Based on the histogram and scatterplot, it looks as though there 
+# might be some outliers in this data set: will remove later
+
+# 3. Use Spearman's to calculate correlation
+correlation_crime_rate <- cor.test(mass_data$`Violent Crime Rate - 2017`,
+                      mass_data$`Voted Yes?`, method="spearman")
+correlation_crime_rate
+
+# The calculated coefficient of correlation is calculated to be
+# 0.2311651, meaning that there is a weak uphill/positive linear
+# relationship between a precinct's violent crime rate and 
+# and whether or not they voted for the legalization of marijuana.
+# The p-value is 0.0002206, making it smaller than 0.05, 
+# meaning that it is statistically significant.
+
+```
+
+<i>Per Capita Revenue</i>
+
+```{r}
+
+# 1. Build histogram to assess normality/distribution
+hist(mass_data$`Per Capita Revenue`, main='Per Capita Revenue')
+
+# Based on histogram, 'Median Household Income' appears to be
+# skewed right (not normally distributed)
+
+# 2. Build scatterplot to test for outliers,
+# view any relationship between population and voting yes
+ggplot(data=mass_data) + geom_point(mapping=aes(x=`Per Capita Revenue`, 
+                                                y=`Voted Yes?`), color="lightskyblue")
+
+# Based on the histogram and scatterplot, it looks as though there 
+# might be some outliers in this data set: will remove later
+
+# 3. Use Spearman's to calculate correlation
+correlation_revenue <- cor.test(mass_data$`Per Capita Revenue`,
+                      mass_data$`Voted Yes?`, method="spearman")
+correlation_revenue
+
+# The calculated coefficient of correlation is calculated to be
+# -0.3045409, meaning that there is a weak downhill/negative linear
+# relationship between a precinct's per capita revenue and 
+# and whether or not they voted for the legalization of marijuana.
+# The p-value is 8.47e-07, making it smaller than 0.05, 
+# meaning that it is statistically significant.
+
+```
+
+<i>Tax Rate - 2017</i>
+
+```{r}
+
+# 1. Build histogram to assess normality/distribution
+hist(mass_data$`Tax Rate - 2017`, main='Tax Rate (2017)')
+
+# Based on histogram, 'Median Household Income' appears to be
+# skewed left (not normally distributed)
+
+# 2. Build scatterplot to test for outliers,
+# view any relationship between population and voting yes
+ggplot(data=mass_data) + geom_point(mapping=aes(x=`Tax Rate - 2017`, 
+                                                y=`Voted Yes?`), color="lightskyblue")
+
+# Based on the histogram and scatterplot, it looks as though there 
+# might be some outliers in this data set: will remove later
+
+# 3. Use Spearman's to calculate correlation
+correlation_tax_rate <- cor.test(mass_data$`Tax Rate - 2017`,
+                      mass_data$`Voted Yes?`, method="spearman")
+correlation_tax_rate
+
+# The calculated coefficient of correlation is calculated to be
+# 0.157777, which is close to 0, meaning that there is almost no linear
+# relationship between a precinct's tax rate and 
+# and whether or not they voted for the legalization of marijuana.
+# The p-value is 0.01232, making it smaller than 0.05, 
+# meaning that it is statistically significant.
+# As a result of the correlation coefficient, I will
+# exclude tax rate as a variable in gauging a precinct's
+# interest in the legalization of marijuana.
+
+```
+
+<i>Education Spending Per Capita - 2015</i>
+
+```{r}
+
+# 1. Build histogram to assess normality/distribution
+hist(mass_data$`Education Spending Per Capita - 2015`, 
+     main='Education Spending Per Capita (2015)')
+
+# Based on histogram, 'Median Household Income' appears to be
+# slightly skewed left (not normally distributed)
+
+# 2. Build scatterplot to test for outliers,
+# view any relationship between population and voting yes
+ggplot(data=mass_data) + geom_point(mapping=aes(x=`Education Spending Per Capita - 2015`, 
+                                                y=`Voted Yes?`), color="lightskyblue")
+
+# Based on the histogram and scatterplot, it looks as though there 
+# might be some outliers in this data set: will remove later
+
+# 3. Use Spearman's to calculate correlation
+correlation_education <- cor.test(mass_data$`Education Spending Per Capita - 2015`,
+                      mass_data$`Voted Yes?`, method="spearman")
+correlation_education
+
+# The calculated coefficient of correlation is calculated to be
+# -0.3031442, meaning that there is a weak downhill/negative linear
+# relationship between a precinct's total education expenses and 
+# and whether or not they voted for the legalization of marijuana.
+# The p-value is 9.861e-07, making it smaller than 0.05, 
+# meaning that it is statistically significant.
+
+```
+
+<i>Removing the outliers:</i>
+
+```{r}
+
+# Removing outliers
+
+# Data frame for updates to removing outliers
+mass_data_no_outliers <- mass_data
+
+# 1. Remove columns that were deemed insignificant/
+# have little-to-no correlation with decision towards
+# legalization of marijuana
+mass_data_no_outliers$Population <- NULL
+mass_data_no_outliers$`Total Outstanding Debt - 2016` <- NULL
+mass_data_no_outliers$`Tax Rate - 2017` <- NULL
+
+# 2. Remove from per capita income
+capital_income_outliers <- detect_outliers(mass_data$`Per Capita Income`, 
+                                          sd(mass_data$`Per Capita Income`), 
+                                          mean(mass_data$`Per Capita Income`))
+
+# 3. Remove from median household income
+median_household_outliers <- detect_outliers(mass_data$`Median Household Income`,
+                                             sd(mass_data$`Median Household Income`),
+                                             mean(mass_data$`Median Household Income`))
+# 4. Remove from median family income
+median_family_outliers <- detect_outliers(mass_data_no_outliers$`Median Family Income`,
+                                             sd(mass_data_no_outliers$`Median Family Income`),
+                                             mean(mass_data_no_outliers$`Median Family Income`))
+
+# 5. Remove from violent crime rate
+crime_outliers <- detect_outliers(mass_data_no_outliers$`Violent Crime Rate - 2017`,
+                                          sd(mass_data_no_outliers$`Violent Crime Rate - 2017`),
+                                          mean(mass_data_no_outliers$`Violent Crime Rate - 2017`))
+
+# 6. Remove from revenue
+revenue_outliers <- detect_outliers(mass_data_no_outliers$`Per Capita Revenue`,
+                                             sd(mass_data_no_outliers$`Per Capita Revenue`),
+                                             mean(mass_data_no_outliers$`Per Capita Revenue`))
+
+# 7. Remove from education spending
+education_outliers <- detect_outliers(mass_data_no_outliers$`Education Spending Per Capita - 2015`,
+                                    sd(mass_data_no_outliers$`Education Spending Per Capita - 2015`),
+                                    mean(mass_data_no_outliers$`Education Spending Per Capita - 2015`))
+
+# Append all of them together and then retrieve
+# unique values to get indicies to remove
+outliers <- c(which(capital_income_outliers), which(median_household_outliers), 
+              which(median_family_outliers), which(crime_outliers), 
+              which(revenue_outliers), which(education_outliers))
+outliers <- unique(outliers)
+
+# Remove these outliers
+mass_data_no_outliers <- mass_data_no_outliers[-outliers,]
+
+# Output final updated data frame
+mass_data_no_outliers
+
+```
+
+<br><br>
+<b>Model Construction & Evaluation</b><br>
+<p>I will now construct models that will assist in predicting how a certain precinct will vote on the legalization of marijuana. I will first start by building testing and training data sets, and then build two models: a logistic regression model ('Voted Yes?' is binary data), and a linear regression model. I will evaluate the models based on their performance measures and make any necessary tuning changes. After that is completed, I will make a few predictions on what how we can expect particular demographics to vote in favor/against the legalization of marijuana.</p>
+<br>
+<i>Building training and testing data sets</i>
+
+```{r}
+
+# Creating training and testing data sets
+cases <- nrow(mass_data_no_outliers)
+
+# Generate random set of indicies
+# that reprsent 70% of the data
+# for the training data
+training_indicies <- sample(1:cases, size=(0.7 * cases))
+
+# Set the training data set
+# and the test data set
+training_data <- mass_data_no_outliers[training_indicies,]
+testing_data <- mass_data_no_outliers[-training_indicies,]
+
+# Output result
+training_data
+testing_data
+
+```
+
+<i>Building Models: Logistic Regression Model</i>
+
+```{r}
+
+# Building logistic regression model
+log_regression_model_training <- glm(formula=`Voted Yes?` ~ `Per Capita Income` +
+                             `Median Household Income` + `Median Family Income`
+                           + `Violent Crime Rate - 2017` + `Per Capita Revenue`
+                           + `Education Spending Per Capita - 2015`,
+                            data=training_data, family=binomial)
+
+# Output result
+summary(log_regression_model_training)
+
+# Evaluating model via performance measures
+
+# Use model on testing data
+log_reg_original_results <- predict(log_regression_model_training,
+                                    newdata=testing_data,
+                                    type="response")
+
+# To calculate error and accuracy
+log_reg_results <- ifelse(log_reg_original_results > 0.5, 1, 0)
+
+# Calculating error 
+# and accuracy
+log_reg_error <- mean(log_reg_results != testing_data$`Voted Yes?`)
+log_reg_accuracy <- 1 - log_reg_error
+
+# Output results
+sprintf("Error: %f", log_reg_error)
+sprintf("Accuracy: %f", log_reg_accuracy)
+
+# Based on the results and the training/testing data used in this particular run, 
+# this model will predict that a precinct will vote 'Yes' about 73% of the time
+
+# Calculating false positives: predicting a precinct will vote 'yes' when they don't
+# and false negatives: predicting a precinct will vote 'no' when they do
+false_pos <- mean((log_reg_results == 1) & (testing_data == 0))
+false_neg <- mean((log_reg_results == 0) & (testing_data == 1))
+
+# Output results
+sprintf("False positives: %f", false_pos)
+sprintf("False negatives: %f", false_neg)
+
+# The false positive and negative rates are, for this
+# training/testing data, 0.014752 and 0.005269 respectively.
+
+```
+
+<i>Tuning Logistic Regression Model</i>
+
+```{r}
+
+# Tuning logistic regression model,
+# via function 'step()'
+tuned_log_model <- step(log_regression_model_training)
+
+# Output result
+summary(tuned_log_model)
+
+# Evaluating model via performance measures
+
+# Use model on testing data
+tuned_log_original_results <- predict(tuned_log_model,
+                                      newdata=testing_data,
+                                      type="response")
+
+# To calculate error and accuracy
+tuned_log_results <- ifelse(tuned_log_original_results > 0.5, 1, 0)
+
+# Calculating error and accuracy
+tuned_log_reg_error <- mean(tuned_log_results != testing_data$`Voted Yes?`)
+tuned_log_reg_accuracy <- 1 - tuned_log_reg_error
+
+# Output results
+sprintf("Error: %f", tuned_log_reg_error)
+sprintf("Accuracy: %f", tuned_log_reg_accuracy)
+
+# Based on the results, this model will predict that
+# a precinct will vote 'Yes' about ~72% of the time
+# for this particular training/testing data set.
+
+# Calculating false positives: predicting a precinct will vote 'yes' when they don't
+# and false negatives: predicting a precinct will vote 'no' when they do
+tuned_false_pos <- mean((tuned_log_results == 1) & (testing_data == 0))
+tuned_false_neg <- mean((tuned_log_results == 0) & (testing_data == 1))
+
+# Output results
+sprintf("False positives: %f", tuned_false_pos)
+sprintf("False negatives: %f", tuned_false_neg)
+
+# The false positive and negative rates are relatively close, being
+# 0.015806 and 0.005269 respectively for this particular training/testing data.
+
+# After tuning the original model, we can see that the
+# p-values of this model, for the predictor variables that 
+# were kept in the tuned model, are slightly more significant
+# for this particular training/testing data set:
+# 'Per Capita Income', 'Median Household Income'
+# and 'Per Capita Revenue' have p-values of
+# 0.01932, 0.06938 and 0.00161 respectively,
+# which is smaller than their p-values of the original model.
+
+```
+
+
+<i>Building Models: Linear Regression Model</i>
+
+```{r}
+
+# Building linear regression model
+# using the training data
+lin_regression_model_training <- lm(formula=`Voted Yes?` ~ `Per Capita Income` +
+                             `Median Household Income` + `Median Family Income`
+                           + `Violent Crime Rate - 2017` + `Per Capita Revenue`
+                           + `Education Spending Per Capita - 2015`,
+                           data=training_data)
+
+# Output results
+summary(lin_regression_model_training)
+
+# Evaluating model using performance measures:
+
+# Based on this first model, we see that the adjusted r-squared
+# value is 0.1153. This is a relatively small r-squared value,
+# implying that this model explains a small amount of the variability
+# of the response data around its mean - meaning that this model
+# doesn't fit the Massachusetts data too well - we will tune the
+# model in response to this.
+
+# The p-values for variables 'Per Capita Income', 'Median Household
+# Income', 'Median Family Income', 'Violent Crime Rate - 2017',
+# 'Per Capita Revenue' and 'Education Spending Per Capita - 2015'
+# are 0.9166, 0.0198, 0.1521, 0.7663, 0.0495 and 0.7079
+# respectively. The variables with p-values > 0.05 means they
+# are statistically insignificant,
+# implies that they might be variables we will remove in 
+# the final tuning of this model.
+# The p-value of the model is 0.0002173, which is < 0.05,
+# making it statistically significant.
+
+```
+
+<i>Tuning of Models - via parameters or factors</i>
+
+```{r}
+
+# Tuning of Models via parameters or factors
+# Tuning model using stepwise technique - using step() function
+tuned_lin_model <- step(lin_regression_model_training)
+
+# Stepping through the model - the model now
+# uses only variables 'Per Capita Income',
+# 'Median Household Income' and 'Per Capita Revenue'
+# in the prediction of voting yes on question 4.
+
+# Output results
+summary(tuned_lin_model)
+
+# Evaluating model using performance measures:
+
+# Based on this tuned model, we see that the
+# the new adjusted r-squared value is 0.1301,
+# which is slightly higher than the original
+# model's adjusted r-squared value of 0.1153.
+# Again, this is a relatively small r-squared value,
+# implying that the model explains a small amount of
+# variability of the response data around its mean.
+
+# The p-values for the kept variables 'Per Capita
+# Income', 'Median Household Income' and 'Per
+# Capita Revenue' are 0.007842, 0.044047, and
+# 0.000697 respectively. These p-values are
+# smaller than the ones from the original model,
+# suggesting more statistical significance in this 
+# model.
+# The model's p value is 9.296e-06,
+# which is less than 0.05, making it significant. It
+# is also less than the original model's p-value,
+# making it more statistically significant
+# than the original model.
+
+```
+
+<i>Making a prediction</i>
+
+```{r}
+
+# Use model to calculate prediction w/ confidence interval
+# Use tuned logistic regression model and tuned linear regression model
+
+# Logistic Regression Model
+ex_1 <- data.frame(X=40000, Y=80000, Z=4000)
+colnames(ex_1) = c('Median Family Income', 'Median Household Income', 'Per Capita Revenue')
+ex_2 <- data.frame(X=10000, Y=35000, Z=2500)
+colnames(ex_2) = c('Median Family Income', 'Median Household Income', 'Per Capita Revenue')
+ex_3 <- data.frame(X=60000, Y=100000, Z=7500)
+colnames(ex_3) = c('Median Family Income', 'Median Household Income', 'Per Capita Revenue')
+
+# Ex 1. How do we expect a precinct in Massachusetts with a Per Capita Income of 40,000, 
+# a Median Household Income of 80,000, and a revenue of 4,000 to vote?
+log_prediction_1 <- predict(tuned_log_model, ex_1, type="response")
+
+# Ex 2. How do we expect a precinct in Massachusetts with a Per Capita Income of 10,000, 
+# a Median Household Income of 35,000, and a revenue of 2,500 to vote?
+log_prediction_2 <- predict(tuned_log_model, ex_2, type="response")
+
+# Ex 3. How do we expect a precinct in Massachusetts with a Per Capita Income of 60,000
+# a Median Household Income of 100,000 and a revenue of 7,500 to vote?
+log_prediction_3 <- predict(tuned_log_model, ex_3, type="response")
+
+# Output results
+log_prediction_1
+log_prediction_2
+log_prediction_3
+
+# Linear Regression Model
+
+# Ex 1. How do we expect a precinct in Massachusetts with a Per Capita Income of 40,000, 
+# a Median Household Income of 80,000, and a revenue of 4,000 to vote?
+lin_prediction_1 <- tuned_lin_model$coefficients[[1]] + (40000 * tuned_lin_model$coefficients[[2]])
+        + (80000 * tuned_lin_model$coefficients[[3]]) + (4000 * tuned_lin_model$coefficients[[4]])
+
+# Ex 2. How do we expect a precinct in Massachusetts with [...]
+lin_prediction_2 <- tuned_lin_model$coefficients[[1]] + (10000 * tuned_lin_model$coefficients[[2]])
+        + (35000 * tuned_lin_model$coefficients[[3]]) + (2500 * tuned_lin_model$coefficients[[4]])
+
+# Ex 3. How do we expect a precinct in Massachusetts with [...]
+lin_prediction_3 <- tuned_lin_model$coefficients[[1]] + (60000 * tuned_lin_model$coefficients[[2]])
+        + (100000 * tuned_lin_model$coefficients[[3]]) + (7500 * tuned_lin_model$coefficients[[4]])
+
+# Evaluation:
+# Overall, these models provide some slight insight into 
+# what predicting factors can determine how a state will vote.
+# However, it may have benefitted from more data; specifically, more
+# non-economic-based demographic data, such as age and race - I 
+# had difficulty finding reliable sources for these metrics
+# and subsequently opted out of including then in my final data collection.
+# Based off of this, it may be useful to determine what the
+# best combination of Per Capita Income, Median Household Income
+# and Revenue are to help recreational marijuana dispenceries in finding the most
+# ideal precincts who are in favor of recreational marijuana to open up shop in. 
+
+```
+
+
